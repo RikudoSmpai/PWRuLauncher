@@ -53,7 +53,8 @@ python tools/pack.py --voice PW_RU_Voice.pak --subs PW_RU_Subs.pak --ue4ss PW_RU
 убирает `.old`. Новая версия видит в игре файлы прошлой и показывает «Обновить».
 
 Версия лаунчера = версия релиза. Релиз собирает GitHub Actions по тегу `vX.Y.Z`
-(`.github/workflows/release.yml`): скачивает файлы локализации по `mods/manifest.json`, сверяет sha256,
+(`.github/workflows/release.yml`): забирает файлы локализации по `mods/manifest.json` из черновика релиза
+(через API под токеном сборки; черновик снаружи не виден), сверяет sha256,
 собирает exe, дописывает бандл и публикует релиз с `PWRuLauncher.exe`, `PWRuLauncher.exe.sha256` и
 самими файлами локализации. Новые файлы локализации = новый манифест + новый тег.
 
