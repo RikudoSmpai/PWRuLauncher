@@ -415,6 +415,7 @@ namespace PWRuLauncher
                     UpdateStatus = $"Доступна версия {v} (у вас {cur}).";
                     UpdateActionLabel = "Скачать и установить";
                     UpdateDot = true;
+                    AboutOpen = true;          // нашли новую версию — панель открывается сама (решение фаундера)
                 }
                 else
                 {

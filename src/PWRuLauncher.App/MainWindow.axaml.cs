@@ -31,7 +31,7 @@ namespace PWRuLauncher
                     case "--no-update-check": autoCheck = false; break;
                 }
             }
-            if (demo != null || shot != null) autoCheck = false;   // показ/скриншот — без сети
+            if ((demo != null || shot != null) && releasesUrl == null) autoCheck = false;   // показ/скриншот — без сети, если не задан свой источник
             _vm = new MainViewModel(args[0], payload, releasesUrl, autoCheck, game);
             if (demo != null) _vm.ApplyDemo(demo);
             _vm.RequestClose += () => Avalonia.Threading.Dispatcher.UIThread.Post(Close);
@@ -42,7 +42,7 @@ namespace PWRuLauncher
             {
                 Opened += async (_, _) =>
                 {
-                    await System.Threading.Tasks.Task.Delay(600);
+                    await System.Threading.Tasks.Task.Delay(releasesUrl != null ? 2000 : 600);
                     try
                     {
                         var size = new Avalonia.PixelSize((int)Width, (int)Height);
