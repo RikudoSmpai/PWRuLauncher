@@ -1,17 +1,17 @@
 {
-  "_comment": "Файлы локализации, которые CI вкладывает в exe релиза. Обновляется автоматически при каждом выкате: url — ассеты релиза модов, sha256 обязателен.",
+  "_comment": "Сгенерировано Hangar (Лаунчер → Релиз мода → Выкатить на GitHub). url: ассеты релиза модов; sha256 обязателен.",
   "voice": {
-    "url": "https://github.com/RikudoSmpai/PWRuLauncher/releases/download/mods-initial/PW_RU_Voice.pak",
+    "url": "https://github.com/RikudoSmpai/PWRuLauncher/releases/download/mods-20260920-1839/PW_RU_Voice.pak",
     "sha256": "fb4c45c725e8a1f228250feebecc9be25991dfe5d4cbac64638d150b37365f84",
     "size": 109393587
   },
   "subs": {
-    "url": "https://github.com/RikudoSmpai/PWRuLauncher/releases/download/mods-initial/PW_RU_Subs.pak",
+    "url": "https://github.com/RikudoSmpai/PWRuLauncher/releases/download/mods-20260920-1839/PW_RU_Subs.pak",
     "sha256": "a4ac56c01534401ca9fab28aa25e61d9dbd3cd02a51c500cf79f9388d7191b99",
     "size": 1278683
   },
   "ue4ss": {
-    "url": "https://github.com/RikudoSmpai/PWRuLauncher/releases/download/mods-initial/PW_RU_UE4SS.zip",
+    "url": "https://github.com/RikudoSmpai/PWRuLauncher/releases/download/mods-20260920-1839/PW_RU_UE4SS.zip",
     "sha256": "a7d147bb9ca1fbbf84d62cdd2f4ff9f1fccf540745dd0fd91db256129fa9793f",
     "size": 6039446
   }
