@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>PWRuLauncher</AssemblyName>
+    <RootNamespace>PWRuLauncher</RootNamespace>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <PlatformTarget>x64</PlatformTarget>
+    <Version>1.0.0</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Product>Project Wingman — русская локализация</Product>
+    <Company>VGS Studio</Company>
+    <Copyright>VGS Studio</Copyright>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.*" />
+    <!-- единый exe: управляемые сборки вшиваются Costura, нативные dll — как ресурсы costura64.* -->
+    <PackageReference Include="Fody" Version="6.*" PrivateAssets="all" />
+    <PackageReference Include="Costura.Fody" Version="6.*" PrivateAssets="all" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <SkiaNative>$(NuGetPackageRoot)skiasharp.nativeassets.win32\2.88.9\runtimes\win-x64\native\libSkiaSharp.dll</SkiaNative>
+    <HarfBuzzNative>$(NuGetPackageRoot)harfbuzzsharp.nativeassets.win32\8.3.1.1\runtimes\win-x64\native\libHarfBuzzSharp.dll</HarfBuzzNative>
+    <AngleNative>$(NuGetPackageRoot)avalonia.angle.windows.natives\2.1.25547.20250602\runtimes\win-x64\native\av_libglesv2.dll</AngleNative>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(SkiaNative)" LogicalName="native.libSkiaSharp.dll" Visible="false" />
+    <EmbeddedResource Include="$(HarfBuzzNative)" LogicalName="native.libHarfBuzzSharp.dll" Visible="false" />
+    <EmbeddedResource Include="$(AngleNative)" LogicalName="native.av_libglesv2.dll" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PWRuLauncher.Core\PWRuLauncher.Core.csproj" />
+  </ItemGroup>
+
+</Project>

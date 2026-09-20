@@ -1,0 +1,12 @@
+bin/
+obj/
+.vs/
+*.user
+payload-dev/
+dist/
+assets/_*.png
+
+# кухня разработки живёт в ../PWRuLauncher-dev (референсы, скрипты); из скриншотов в репо только sheet.png
+shots/*
+!shots/sheet.png
+assets/

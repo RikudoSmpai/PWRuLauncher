@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Weavers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="FodyWeavers.xsd">
+  <!-- Все управляемые сборки (Avalonia, SkiaSharp, ...) вшиваются в exe как ресурсы;
+       нативные libSkiaSharp/libHarfBuzzSharp/av_libglesv2 лежат как ресурсы costura-win-x64.* (см. csproj)
+       и распаковываются во временную папку при старте. -->
+  <Costura IncludeDebugSymbols="false" DisableCompression="false" />
+</Weavers>
