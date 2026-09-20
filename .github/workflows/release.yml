@@ -38,8 +38,10 @@ jobs:
         shell: pwsh
         run: dotnet publish src/PWRuLauncher.App/PWRuLauncher.App.csproj -c Release -o dist/raw -p:Version=${{ steps.ver.outputs.version }}
 
-      - name: Моды по манифесту (скачать и сверить sha256)
+      - name: Файлы локализации по манифесту (скачать и сверить sha256)
         shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: python tools/fetch_mods.py mods/manifest.json dist/mods
 
       - name: Бандл в хвост exe
