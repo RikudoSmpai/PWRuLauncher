@@ -1,5 +1,5 @@
 {
-  "_comment": "Сгенерировано Hangar (Лаунчер → Релиз мода → Выкатить на GitHub). url: ассеты релиза модов; sha256 обязателен.",
+  "_comment": "Файлы локализации для сборки релиза. Обновляется автоматически при каждом выкате: url — ассеты релиза модов, sha256 обязателен.",
   "voice": {
     "url": "https://github.com/RikudoSmpai/PWRuLauncher/releases/download/mods-20260920-1839/PW_RU_Voice.pak",
     "sha256": "fb4c45c725e8a1f228250feebecc9be25991dfe5d4cbac64638d150b37365f84",
