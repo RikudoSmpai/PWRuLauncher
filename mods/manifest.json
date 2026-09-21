@@ -1,18 +1,25 @@
 {
-  "_comment": "Файлы локализации для сборки релиза. Обновляется автоматически при каждом выкате: url — ассеты релиза модов, sha256 обязателен.",
+  "_comment": "Файлы локализации для сборки релиза. Обновляется автоматически при каждом выкате; source — черновик релиза с ассетами, CI забирает их через API; sha256 обязателен.",
+  "source": {
+    "tag": "mods-20260921-1800",
+    "release_id": 393178806
+  },
   "voice": {
-    "url": "https://github.com/RikudoSmpai/PWRuLauncher/releases/download/mods-20260920-1839/PW_RU_Voice.pak",
-    "sha256": "fb4c45c725e8a1f228250feebecc9be25991dfe5d4cbac64638d150b37365f84",
-    "size": 109393587
+    "name": "PW_RU_Voice.pak",
+    "asset_id": 579568881,
+    "sha256": "53962160e20cba7b87c74192ee7881cfe2ec4adeabd14bb15a1f2eddf23463e9",
+    "size": 110341964
   },
   "subs": {
-    "url": "https://github.com/RikudoSmpai/PWRuLauncher/releases/download/mods-20260920-1839/PW_RU_Subs.pak",
-    "sha256": "a4ac56c01534401ca9fab28aa25e61d9dbd3cd02a51c500cf79f9388d7191b99",
-    "size": 1278683
+    "name": "PW_RU_Subs.pak",
+    "asset_id": 579569087,
+    "sha256": "cb1fedfd1d4fe197bbc2b9274fd82e9ab16a8b0f58f13b5fa244cbc5657dde76",
+    "size": 1278523
   },
   "ue4ss": {
-    "url": "https://github.com/RikudoSmpai/PWRuLauncher/releases/download/mods-20260920-1839/PW_RU_UE4SS.zip",
-    "sha256": "a7d147bb9ca1fbbf84d62cdd2f4ff9f1fccf540745dd0fd91db256129fa9793f",
-    "size": 6039446
+    "name": "PW_RU_UE4SS.zip",
+    "asset_id": 579569108,
+    "sha256": "0d03c6fc2c5a87cc39678634ceedcec1ec58680edb262c41a334080fa968fa93",
+    "size": 6027464
   }
 }
