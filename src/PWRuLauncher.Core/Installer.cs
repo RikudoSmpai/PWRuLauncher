@@ -49,7 +49,12 @@ namespace PWRuLauncher.Core
         public const string BundleMarker = "PWRU_bundle.info";
         public const string MoviesMarker = "PWRU_movies.info";
         public const string MovieBackupSuffix = ".pwru-orig";
-        private static readonly string[] Ue4ssWin64Files = { "dwmapi.dll", "UE4SS.dll", "UE4SS-settings.ini", "UE4SS.log" };
+        private static readonly string[] Ue4ssWin64Files = { "dwmapi.dll", "UE4SS.dll", "UE4SS-settings.ini" };
+        /// <summary>Лог прошлого запуска игры: не удаляем, а переименовываем — иначе каждое обновление стирает
+        /// улики упавшего запуска (bugs/2026-09-21-fatal-error-pri-obnovlenii-modov).</summary>
+        public const string Ue4ssLog = "UE4SS.log";
+        public const string Ue4ssPrevLog = "UE4SS.prev.log";
+        public const string GameProcessName = "ProjectWingman-Win64-Shipping";
         private static readonly string[] Ue4ssWin64Dirs = { "Mods" };
         private static readonly string[] Ue4ssLogicModsFiles = { "ModOK.pak" };
 
@@ -98,6 +103,8 @@ namespace PWRuLauncher.Core
         // ------------------------------------------------------------------ озвучка
         public Task InstallVoiceAsync(IProgress<InstallProgress> progress, CancellationToken ct) => Task.Run(() =>
         {
+            EnsureGameClosed();
+            InstallLog.Write($"озвучка: установка (бандл {_payload.Manifest.BundleStamp})");
             Directory.CreateDirectory(_game.ModsDir);
             var entry = _payload.Archive.GetEntry(Payload.VoiceEntry) ?? throw new InvalidDataException("В бандле нет озвучки");
             ExtractFile(entry, Path.Combine(_game.ModsDir, VoicePak), "Распаковываю озвучку…", entry.Length, 0, progress, ct);
@@ -106,6 +113,8 @@ namespace PWRuLauncher.Core
 
         public Task RemoveVoiceAsync() => Task.Run(() =>
         {
+            EnsureGameClosed();
+            InstallLog.Write("озвучка: снятие");
             RemoveIfExists(Path.Combine(_game.ModsDir, VoicePak));
             RemoveIfExists(Path.Combine(_game.ModsDir, VoicePak + ".part"));
         });
@@ -113,7 +122,9 @@ namespace PWRuLauncher.Core
         // ------------------------------------------------------------------ текст: сабы + UE4SS + интро
         public Task InstallTextAsync(IProgress<InstallProgress> progress, CancellationToken ct) => Task.Run(() =>
         {
+            EnsureGameClosed();
             var m = _payload.Manifest;
+            InstallLog.Write($"текст: установка (бандл {m.BundleStamp})");
             Directory.CreateDirectory(_game.ModsDir);
             var subs = _payload.Archive.GetEntry(Payload.SubsEntry) ?? throw new InvalidDataException("В бандле нет субтитров");
             long total = subs.Length + _payload.TotalBytes(Payload.Ue4ssPrefix) - _payload.TotalBytes(Payload.MoviesPrefix);
@@ -143,6 +154,7 @@ namespace PWRuLauncher.Core
             Directory.CreateDirectory(Path.Combine(_game.Win64Dir, "Mods"));
             File.WriteAllText(Path.Combine(_game.Win64Dir, "Mods", BundleMarker), m.BundleStamp.ToString(CultureInfo.InvariantCulture));
             RemoveIfExists(Path.Combine(_game.ModsDir, OldComboPak));
+            InstallLog.Write($"текст: готово, маркер {m.BundleStamp}");
             progress.Report(new InstallProgress("Готово", 1));
         }, ct);
 
@@ -150,7 +162,9 @@ namespace PWRuLauncher.Core
         /// <summary>Интро VGS ставится, пока включён хоть один компонент; снимается только когда выключены оба.</summary>
         public Task InstallIntroAsync(IProgress<InstallProgress> progress, CancellationToken ct) => Task.Run(() =>
         {
+            EnsureGameClosed();
             var m = _payload.Manifest;
+            InstallLog.Write($"интро: установка (бандл {m.BundleStamp})");
             RestoreMovies();                          // чистая переустановка: оригиналы на место, потом наши
             long total = _payload.TotalBytes(Payload.MoviesPrefix);
             long done = 0;
@@ -172,33 +186,63 @@ namespace PWRuLauncher.Core
                 m.BundleStamp.ToString(CultureInfo.InvariantCulture) + "\n" + string.Join("\n", movies) + "\n");
         }, ct);
 
-        public Task RemoveIntroAsync() => Task.Run(RestoreMovies);
+        public Task RemoveIntroAsync() => Task.Run(() =>
+        {
+            EnsureGameClosed();
+            InstallLog.Write("интро: снятие");
+            RestoreMovies();
+        });
 
         public Task RemoveTextAsync() => Task.Run(() =>
         {
+            EnsureGameClosed();
+            InstallLog.Write("текст: снятие");
             RemoveIfExists(Path.Combine(_game.ModsDir, SubsPak));
             RemoveIfExists(Path.Combine(_game.ModsDir, SubsPak + ".part"));
             RemoveUe4ssLayer();
         });
 
-        /// <summary>Удаляет ТОЛЬКО наши файлы. Залоченный dll = игра запущена, честная ошибка наружу.</summary>
+        /// <summary>Удаляет ТОЛЬКО наши файлы. Залоченный dll = игра запущена, честная ошибка наружу.
+        /// UE4SS.log при этом не удаляется, а становится UE4SS.prev.log: это лог последнего запуска игры,
+        /// и именно он нужен, когда игра упала во время или сразу после обновления.</summary>
         private void RemoveUe4ssLayer()
         {
+            var log = Path.Combine(_game.Win64Dir, Ue4ssLog);
+            if (File.Exists(log))
+            {
+                var prev = Path.Combine(_game.Win64Dir, Ue4ssPrevLog);
+                try { RemoveIfExists(prev); File.Move(log, prev); InstallLog.Write($"{Ue4ssLog} -> {Ue4ssPrevLog}"); }
+                catch (Exception ex) { InstallLog.Write($"{Ue4ssLog}: не переименован ({ex.Message})"); }
+            }
             foreach (var f in Ue4ssWin64Files)
             {
                 var p = Path.Combine(_game.Win64Dir, f);
                 if (!File.Exists(p)) continue;
-                try { File.Delete(p); }
-                catch (Exception ex) { throw new IOException($"Не удалось удалить {f}: закройте игру. ({ex.Message})"); }
+                try { File.Delete(p); InstallLog.Write($"удалён {f}"); }
+                catch (Exception ex) { InstallLog.Write($"НЕ удалён {f}: {ex.Message}"); throw new IOException($"Не удалось удалить {f}: закройте игру. ({ex.Message})"); }
             }
             foreach (var d in Ue4ssWin64Dirs)
             {
                 var p = Path.Combine(_game.Win64Dir, d);
                 if (!Directory.Exists(p)) continue;
-                try { Directory.Delete(p, true); }
-                catch (Exception ex) { throw new IOException($"Не удалось удалить папку {d}: закройте игру. ({ex.Message})"); }
+                try { Directory.Delete(p, true); InstallLog.Write($"удалена папка {d}"); }
+                catch (Exception ex) { InstallLog.Write($"НЕ удалена папка {d}: {ex.Message}"); throw new IOException($"Не удалось удалить папку {d}: закройте игру. ({ex.Message})"); }
             }
             foreach (var f in Ue4ssLogicModsFiles) RemoveIfExists(Path.Combine(_game.LogicModsDir, f));
+        }
+
+        /// <summary>Игра запущена — ничего не трогаем. До 24.09 лаунчер узнавал об этом только по залоченному
+        /// файлу, уже снеся часть слоя модов: запущенная игра видела неполный набор и падала с Fatal Error.</summary>
+        public static bool IsGameRunning()
+        {
+            try { return Process.GetProcessesByName(GameProcessName).Length > 0; } catch { return false; }
+        }
+
+        private static void EnsureGameClosed()
+        {
+            if (!IsGameRunning()) return;
+            InstallLog.Write("отказ: игра запущена");
+            throw new IOException("Игра запущена — закройте её и повторите.");
         }
 
         private void RestoreMovies()
@@ -264,12 +308,42 @@ namespace PWRuLauncher.Core
             }
             RemoveIfExists(dest);
             File.Move(tmp, dest);
+            InstallLog.Write($"записан {dest} ({entry.Length} б)");
             progress.Report(new InstallProgress(status, total > 0 ? (double)(doneBefore + entry.Length) / total : 0));
         }
 
         private static void RemoveIfExists(string path)
         {
             try { if (File.Exists(path)) File.Delete(path); } catch { /* best effort */ }
+        }
+    }
+
+    /// <summary>Лог установки: что снесли, что распаковали, во сколько. %LOCALAPPDATA%\PWRuLauncher\install.log,
+    /// дописывается, при 2 МБ уходит в install.prev.log. Молчит при любой ошибке — лог не должен ломать установку.</summary>
+    public static class InstallLog
+    {
+        public static string Path =>
+            System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PWRuLauncher", "install.log");
+
+        private static readonly object Gate = new object();
+
+        public static void Write(string line)
+        {
+            try
+            {
+                lock (Gate)
+                {
+                    var p = Path;
+                    Directory.CreateDirectory(System.IO.Path.GetDirectoryName(p)!);
+                    if (File.Exists(p) && new FileInfo(p).Length > 2 * 1024 * 1024)
+                    {
+                        var prev = System.IO.Path.ChangeExtension(p, ".prev.log");
+                        try { if (File.Exists(prev)) File.Delete(prev); File.Move(p, prev); } catch { }
+                    }
+                    File.AppendAllText(p, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {line}\n");
+                }
+            }
+            catch { /* лог не должен ломать установку */ }
         }
     }
 
