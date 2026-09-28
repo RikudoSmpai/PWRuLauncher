@@ -1,24 +1,24 @@
 {
   "_comment": "Файлы локализации для сборки релиза. Обновляется автоматически при каждом выкате; source — черновик релиза с ассетами, CI забирает их через API; sha256 обязателен.",
   "source": {
-    "tag": "mods-20260927-2028",
-    "release_id": 397800128
+    "tag": "mods-20260928-0135",
+    "release_id": 397890677
   },
   "voice": {
     "name": "PW_RU_Voice.pak",
-    "asset_id": 593713723,
-    "sha256": "3d4bdb9fe1451faf3a73c092757f5b68fa3b0581cc1e4d5a9b44a71e77b66cd7",
-    "size": 109968535
+    "asset_id": 594192008,
+    "sha256": "c52131faba9ce4ff9674d85161d7ef4275e9557eefeb4f6d5e301a95472668e9",
+    "size": 114428390
   },
   "subs": {
     "name": "PW_RU_Subs.pak",
-    "asset_id": 593713873,
-    "sha256": "7ebc72d0205dc2e374e7dd7689123f11c9ae0ed7edbf4086c89c82e36000d7c9",
-    "size": 1279402
+    "asset_id": 594192173,
+    "sha256": "4fbc8583e84eefebdf41619883ec2e15e72ce210970e884353e4650871acd04e",
+    "size": 1279419
   },
   "ue4ss": {
     "name": "PW_RU_UE4SS.zip",
-    "asset_id": 593713885,
+    "asset_id": 594192201,
     "sha256": "f4931dbf19b07b83b91df29d7a7da7a1cacb161bb8da28a7fc5038052ef44f23",
     "size": 6033939
   }
