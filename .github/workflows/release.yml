@@ -54,6 +54,17 @@ jobs:
           "$sha  PWRuLauncher.exe" | Out-File -Encoding ascii -NoNewline dist/PWRuLauncher.exe.sha256
           Get-Content dist/PWRuLauncher.exe.sha256
 
+      # Суммы модов в формате sha256sum: по ним установщик для Linux (PWRuScript, Slava Pacifist)
+      # проверяет скачанные файлы. Проверка: sha256sum -c PW_RU_mods.sha256 в папке с модами.
+      - name: Суммы модов
+        shell: pwsh
+        run: |
+          $lines = foreach ($n in "PW_RU_Voice.pak", "PW_RU_Subs.pak", "PW_RU_UE4SS.zip") {
+            "{0}  {1}" -f (Get-FileHash "dist/mods/$n" -Algorithm SHA256).Hash.ToLower(), $n
+          }
+          [IO.File]::WriteAllText("dist/PW_RU_mods.sha256", ($lines -join "`n") + "`n", [Text.Encoding]::ASCII)
+          Get-Content dist/PW_RU_mods.sha256
+
       - name: Релиз
         uses: softprops/action-gh-release@v2
         with:
@@ -65,3 +76,4 @@ jobs:
             dist/mods/PW_RU_Voice.pak
             dist/mods/PW_RU_Subs.pak
             dist/mods/PW_RU_UE4SS.zip
+            dist/PW_RU_mods.sha256
