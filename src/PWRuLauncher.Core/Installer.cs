@@ -63,6 +63,10 @@ namespace PWRuLauncher.Core
 
         public Installer(Payload payload, GameInstall game) { _payload = payload; _game = game; }
 
+        /// <summary>Только для «Удалить всё»: снятие не читает бандл, поэтому работает и без него
+        /// (лаунчер без бандла внутри, битый бандл). Inspect/Install у такого объекта вызывать нельзя.</summary>
+        public static Installer ForRemoval(GameInstall game) => new Installer(null!, game);
+
         // ------------------------------------------------------------------ состояние
         public InstallState Inspect()
         {
@@ -192,6 +196,47 @@ namespace PWRuLauncher.Core
             InstallLog.Write("интро: снятие");
             RestoreMovies();
         });
+
+        /// <summary>«Удалить всё» (Маргулан и игрок в Steam, 17.11): оба компонента, интро, лог UE4SS и пустые
+        /// папки модов, которые создала установка. Только наши файлы и папка UE4SS Mods — игра как из Steam.
+        /// В конце проверка: если что-то осталось (файл занят), ошибка наружу, лаунчер себя не удаляет.</summary>
+        public Task RemoveAllAsync() => Task.Run(() =>
+        {
+            EnsureGameClosed();
+            InstallLog.Write("удалить всё: начало");
+            foreach (var pak in new[] { VoicePak, SubsPak, OldComboPak })
+            {
+                RemoveIfExists(Path.Combine(_game.ModsDir, pak));
+                RemoveIfExists(Path.Combine(_game.ModsDir, pak + ".part"));
+            }
+            RemoveUe4ssLayer();
+            RemoveIfExists(Path.Combine(_game.Win64Dir, Ue4ssLog));       // RemoveUe4ssLayer оставляет их для разбора падений,
+            RemoveIfExists(Path.Combine(_game.Win64Dir, Ue4ssPrevLog));   // а здесь игрок просит убрать всё
+            RestoreMovies();
+            RemoveDirIfEmpty(_game.ModsDir);
+            RemoveDirIfEmpty(_game.LogicModsDir);
+
+            var left = new List<string>();
+            foreach (var p in new[]
+                     {
+                         Path.Combine(_game.ModsDir, VoicePak), Path.Combine(_game.ModsDir, SubsPak), Path.Combine(_game.ModsDir, OldComboPak),
+                         Path.Combine(_game.Win64Dir, "dwmapi.dll"), Path.Combine(_game.Win64Dir, "UE4SS.dll"),
+                         Path.Combine(_game.Win64Dir, Ue4ssPrevLog), Path.Combine(_game.MoviesDir, MoviesMarker),
+                     })
+                if (File.Exists(p)) left.Add(Path.GetFileName(p));
+            if (left.Count > 0)
+            {
+                InstallLog.Write("удалить всё: осталось " + string.Join(", ", left));
+                throw new IOException("Не удалось удалить: " + string.Join(", ", left) + ". Закройте игру и повторите.");
+            }
+            InstallLog.Write("удалить всё: готово");
+        });
+
+        private static void RemoveDirIfEmpty(string dir)
+        {
+            try { if (Directory.Exists(dir) && Directory.GetFileSystemEntries(dir).Length == 0) Directory.Delete(dir); }
+            catch { /* не пустая или занята — оставляем */ }
+        }
 
         public Task RemoveTextAsync() => Task.Run(() =>
         {
