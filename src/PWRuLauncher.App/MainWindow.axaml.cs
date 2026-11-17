@@ -75,6 +75,7 @@ namespace PWRuLauncher
         private void Repo_Click(object? sender, RoutedEventArgs e) => OpenUrl(_vm.RepoUrl);
         private void Releases_Click(object? sender, RoutedEventArgs e) => OpenUrl(_vm.ReleasesUrl);
         private async void UpdateAction_Click(object? sender, RoutedEventArgs e) => await _vm.UpdateActionAsync();
+        private async void Uninstall_Click(object? sender, RoutedEventArgs e) => await _vm.UninstallAsync();
 
         private static void OpenUrl(string url)
         {

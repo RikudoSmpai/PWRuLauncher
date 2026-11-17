@@ -468,7 +468,7 @@
 
       <!-- «О программе»: поверх тела; шапка и подвал остаются -->
       <Border Grid.Row="1" IsVisible="{Binding AboutOpen}" Background="#f40b1521" Padding="32,10">
-        <Grid RowDefinitions="Auto,*,Auto" Width="440">
+        <Grid RowDefinitions="Auto,*,Auto,Auto" Width="440">
           <Grid ColumnDefinitions="*,Auto">
             <StackPanel Spacing="3" VerticalAlignment="Center">
               <TextBlock Text="PROJECT WINGMAN — РУССКАЯ ЛОКАЛИЗАЦИЯ" FontSize="11" FontWeight="SemiBold" LetterSpacing="1" Foreground="#d1dfe7"/>
@@ -490,6 +490,12 @@
           <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
             <TextBlock Text="{Binding UpdateStatus}" FontSize="10" Foreground="#9aafbc" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,10,0"/>
             <Button Grid.Column="1" Classes="browse" Width="176" Content="{Binding UpdateActionLabel}" IsEnabled="{Binding UpdateActionEnabled}" Click="UpdateAction_Click"/>
+          </Grid>
+          <!-- «Удалить всё»: перевод из игры, логи и сам лаунчер; второй клик — подтверждение -->
+          <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+            <TextBlock Text="{Binding UninstallStatus}" FontSize="10" Foreground="#b08f85" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,10,0"/>
+            <Button Grid.Column="1" Classes="browse" Width="176" Content="{Binding UninstallLabel}" IsEnabled="{Binding UninstallEnabled}" Click="Uninstall_Click"
+                    ToolTip.Tip="Убрать перевод из игры и удалить лаунчер"/>
           </Grid>
         </Grid>
       </Border>

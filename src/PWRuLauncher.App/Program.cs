@@ -16,6 +16,8 @@ namespace PWRuLauncher
                 if (args[i] == "--selftest") return SelfTest.Run(args, args[i + 1].Trim('"', '\''));
             for (int i = 0; i < args.Length - 1; i++)
                 if (args[i] == "--selftest-install") return SelfTest.RunInstallOnly(args, args[i + 1].Trim('"', '\''));
+            for (int i = 0; i < args.Length - 1; i++)
+                if (args[i] == "--selftest-selfremove") return SelfTest.RunSelfRemove(args[i + 1].Trim('"', '\''));
             // --selftest-update <url latest.json> [--swap [аргументы новому exe]]: проверка/скачивание/подмена без окна
             for (int i = 0; i < args.Length - 1; i++)
                 if (args[i] == "--selftest-update") return SelfTest.RunUpdate(args, i + 1);

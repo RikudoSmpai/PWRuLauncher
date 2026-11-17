@@ -79,6 +79,71 @@ namespace PWRuLauncher
             return failed == 0 ? 0 : 2;
         }
 
+        /// <summary>Все файлы папки (относительный путь → размер).</summary>
+        private static System.Collections.Generic.Dictionary<string, long> Snapshot(string root)
+        {
+            var d = new System.Collections.Generic.Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+            foreach (var f in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+                d[f.Substring(root.Length).TrimStart('\\', '/')] = new FileInfo(f).Length;
+            return d;
+        }
+
+        /// <summary>Разница двух снимков: пусто — совпадают; иначе первые отличия.</summary>
+        private static string Diff(System.Collections.Generic.Dictionary<string, long> a, System.Collections.Generic.Dictionary<string, long> b)
+        {
+            var out_ = new System.Collections.Generic.List<string>();
+            foreach (var kv in a)
+                if (!b.TryGetValue(kv.Key, out var len)) out_.Add("нет " + kv.Key);
+                else if (len != kv.Value) out_.Add($"размер {kv.Key}: {kv.Value} → {len}");
+            foreach (var kv in b)
+                if (!a.ContainsKey(kv.Key)) out_.Add("лишний " + kv.Key);
+            return string.Join("; ", out_.GetRange(0, Math.Min(8, out_.Count))) + (out_.Count > 8 ? $"; ещё {out_.Count - 8}" : "");
+        }
+
+        /// <summary>--selftest-selfremove &lt;пустая папка&gt;: команда удаления лаунчера на подставном exe и подставной папке
+        /// данных (с пробелами, кириллицей и &amp; в пути). Настоящие лаунчер и %LOCALAPPDATA% не трогаются.</summary>
+        public static int RunSelfRemove(string dir)
+        {
+            var exe = typeof(SelfTest).Assembly.Location;
+            var logPath = Path.Combine(Path.GetDirectoryName(exe) ?? ".", "PWRuLauncher.selftest.log");
+            var sb = new StringBuilder();
+            int failed = 0;
+            void Check(bool ok, string what) { sb.AppendLine((ok ? "PASS " : "FAIL ") + what); if (!ok) failed++; }
+            try
+            {
+                var home = Path.Combine(dir, "Лаунчер & игры (тест)");
+                var data = Path.Combine(dir, "Данные лаунчера");
+                Directory.CreateDirectory(home);
+                Directory.CreateDirectory(Path.Combine(data, "native", "abc"));
+                var fake = Path.Combine(home, "PWRuLauncher.exe");
+                foreach (var f in SelfRemove.Files(fake)) File.WriteAllText(f, "x");
+                File.WriteAllText(Path.Combine(data, "native", "abc", "libSkiaSharp.dll"), "x");
+                File.WriteAllText(Path.Combine(data, "install.log"), "x");
+                var keep = Path.Combine(home, "чужой файл.txt");
+                File.WriteAllText(keep, "x");
+
+                var cmd = SelfRemove.Command(fake, data);
+                Check(cmd != null, "command built");
+                Check(SelfRemove.Command(Path.Combine(dir, "100%", "PWRuLauncher.exe"), data) == null, "path with % refused");
+                if (cmd != null)
+                {
+                    var psi = new System.Diagnostics.ProcessStartInfo(Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe", "/d /c " + cmd)
+                    { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = Path.GetTempPath() };
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    using var p = System.Diagnostics.Process.Start(psi)!;
+                    Check(p.WaitForExit(60000), "cmd finished");
+                    sb.AppendLine($"took {sw.ElapsedMilliseconds} ms");
+                    foreach (var f in SelfRemove.Files(fake)) Check(!File.Exists(f), "deleted " + Path.GetFileName(f));
+                    Check(!Directory.Exists(data), "data folder deleted");
+                    Check(File.Exists(keep), "other files next to the launcher kept");
+                }
+            }
+            catch (Exception ex) { sb.AppendLine("EXCEPTION " + ex); failed++; }
+            sb.AppendLine(failed == 0 ? "RESULT OK" : $"RESULT FAILED ({failed})");
+            File.WriteAllText(logPath, sb.ToString());
+            return failed == 0 ? 0 : 2;
+        }
+
         public static int Run(string[] args, string gameRoot)
         {
             var sb = new StringBuilder();
@@ -105,14 +170,12 @@ namespace PWRuLauncher
                 var inst = new Installer(payload, game);
                 var st0 = inst.Inspect();
                 sb.AppendLine($"before: voice={st0.VoiceInstalled} text={st0.TextInstalled} intro={st0.IntroInstalled} present={st0.VoicePresent}/{st0.TextPresent}/{st0.IntroPresent}");
-                if (st0.VoicePresent || st0.TextPresent || st0.IntroPresent)
-                {
-                    // копия не чистая (прошлый прогон или другая версия) — сначала снять всё, иначе «оригинал» интро будет нашим файлом
-                    inst.RemoveVoiceAsync().GetAwaiter().GetResult();
-                    inst.RemoveTextAsync().GetAwaiter().GetResult();
-                    inst.RemoveIntroAsync().GetAwaiter().GetResult();
-                    sb.AppendLine("pre-clean: removed previous install");
-                }
+                // копия может быть не чистой (прошлый прогон, другая версия) — «Удалить всё» до начала, иначе
+                // «оригинал» интро будет нашим файлом; заодно снимок папки игры «как из Steam» для проверки в конце
+                inst.RemoveAllAsync().GetAwaiter().GetResult();
+                if (st0.VoicePresent || st0.TextPresent || st0.IntroPresent) sb.AppendLine("pre-clean: removed previous install");
+                var clean = Snapshot(game.Root);
+                sb.AppendLine($"clean game folder: {clean.Count} files");
 
                 var progress = new Progress<InstallProgress>(_ => { });
                 var moviePath = Path.Combine(game.MoviesDir, "HumbleIntro_PW.mp4");
@@ -152,6 +215,22 @@ namespace PWRuLauncher
                 Check(!File.Exists(Path.Combine(game.MoviesDir, Installer.MoviesMarker)), "movies marker gone");
                 var st3 = inst.Inspect();
                 Check(!st3.Any, "inspect after removal: nothing");
+
+                // «Удалить всё»: поставить всё, изобразить запуск игры (лог UE4SS), снять одним вызовом —
+                // папка игры такая же, как до установки (имена и размеры всех файлов), чужие моды на месте
+                inst.InstallIntroAsync(progress, CancellationToken.None).GetAwaiter().GetResult();
+                inst.InstallTextAsync(progress, CancellationToken.None).GetAwaiter().GetResult();
+                inst.InstallVoiceAsync(progress, CancellationToken.None).GetAwaiter().GetResult();
+                File.WriteAllText(Path.Combine(game.Win64Dir, Installer.Ue4ssLog), "selftest: log of a game run\n");
+                Check(inst.Inspect().Any, "remove-all: everything installed first");
+                inst.RemoveAllAsync().GetAwaiter().GetResult();
+                var after = Snapshot(game.Root);
+                var diff = Diff(clean, after);
+                Check(diff.Length == 0, "remove-all: game folder as before install" + (diff.Length == 0 ? "" : " — " + diff));
+                Check(!inst.Inspect().Any && !inst.Inspect().IntroPresent, "remove-all: inspect says nothing installed");
+                var removal = Installer.ForRemoval(game);
+                removal.RemoveAllAsync().GetAwaiter().GetResult();
+                Check(Diff(clean, Snapshot(game.Root)).Length == 0, "remove-all without bundle: no-op on a clean game");
             }
             catch (Exception ex)
             {

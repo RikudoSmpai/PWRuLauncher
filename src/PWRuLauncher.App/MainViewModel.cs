@@ -71,7 +71,15 @@ namespace PWRuLauncher
 
         // «О программе» и обновления с GitHub
         private bool _aboutOpen;
-        public bool AboutOpen { get => _aboutOpen; set => Set(ref _aboutOpen, value); }
+        public bool AboutOpen
+        {
+            get => _aboutOpen;
+            set
+            {
+                // панель закрыли, не подтвердив «Удалить всё» — подтверждение сбрасывается
+                if (Set(ref _aboutOpen, value) && !value && _uninstallStage == 1) { SetUninstallStage(0); UninstallStatus = ""; }
+            }
+        }
         public string AppVersionText => "Версия " + Updates.CurrentVersion;
         public string RepoUrl => Updates.RepoUrl;
         public string ReleasesUrl => Updates.ReleasesPageUrl;
@@ -84,6 +92,14 @@ namespace PWRuLauncher
         /// <summary>Тихая точка на кнопке «i»: нашли новую версию при старте, в основном окне ни строки.</summary>
         private bool _updateDot;
         public bool UpdateDot { get => _updateDot; private set => Set(ref _updateDot, value); }
+        // «Удалить всё» в «О программе» (Маргулан и игрок в Steam, 17.11): перевод из игры, логи и сам лаунчер.
+        // Первый клик — объяснение и «Да, удалить всё», второй — удаление.
+        private int _uninstallStage;          // 0 — кнопка, 1 — ждёт подтверждения, 2 — удаляет
+        private bool _demo;
+        private string _uninstallStatus = "";
+        public string UninstallStatus { get => _uninstallStatus; private set => Set(ref _uninstallStatus, value); }
+        public string UninstallLabel => _uninstallStage == 1 ? "Да, удалить всё" : _uninstallStage == 2 ? "Удаляю…" : "Удалить всё";
+        public bool UninstallEnabled => _uninstallStage != 2 && !IsInstalling;
         private string _progressSource = "Копирование с диска";
         public string ProgressSource { get => _progressSource; private set => Set(ref _progressSource, value); }
 
@@ -351,6 +367,7 @@ namespace PWRuLauncher
         {
             _suppressToggles = true;
             _installer = null;
+            _demo = true;           // показ: «Удалить всё» ничего не трогает
             switch (demo)
             {
                 case "installing":
@@ -376,6 +393,12 @@ namespace PWRuLauncher
                 case "update":
                     Phase = Phase.Update; _voiceOn = true; _textOn = true; ComponentsOpen = true;
                     break;
+                case "uninstall":
+                    Phase = Phase.Ready; _voiceOn = true; _textOn = true; AboutOpen = true;
+                    UpdateStatus = "У вас последняя версия (" + Updates.CurrentVersion + ").";
+                    SetUninstallStage(1);
+                    UninstallStatus = "Уберёт из игры озвучку, субтитры, UE4SS и интро VGS — игра станет как из Steam. Потом удалит логи и сам лаунчер.";
+                    break;
                 default:
                     Phase = Phase.Install; _voiceOn = true; _textOn = true; ComponentsOpen = true;
                     break;
@@ -392,7 +415,7 @@ namespace PWRuLauncher
         {
             foreach (var n in new[] { nameof(IsInstall), nameof(IsInstalling), nameof(IsReady), nameof(IsUpdate), nameof(IsError),
                                       nameof(PrimaryEnabled), nameof(PrimaryLabel), nameof(TogglesEnabled),
-                                      nameof(StatusesVisible), nameof(BrowseEnabled), nameof(UpdateActionEnabled),
+                                      nameof(StatusesVisible), nameof(BrowseEnabled), nameof(UpdateActionEnabled), nameof(UninstallEnabled),
                                       nameof(NothingSelected), nameof(PlayMode), nameof(ShowPlayIcon), nameof(ShowInstallIcon) })
                 Raise(n);
         }
@@ -482,6 +505,51 @@ namespace PWRuLauncher
             }
             Phase = prevPhase;
             Refresh(keepToggles: true);
+        }
+
+        /// <summary>Кнопка «Удалить всё»: первый клик — что будет удалено, второй — снять перевод, удалить лаунчер и закрыться.</summary>
+        public async Task UninstallAsync()
+        {
+            if (_uninstallStage == 2 || IsInstalling) return;
+            var remover = _installer ?? (_game != null ? Installer.ForRemoval(_game) : null);
+            if (_uninstallStage == 0)
+            {
+                SetUninstallStage(1);
+                UninstallStatus = remover != null
+                    ? "Уберёт из игры озвучку, субтитры, UE4SS и интро VGS — игра станет как из Steam. Потом удалит логи и сам лаунчер."
+                    : "Папка игры не указана: перевод в игре останется. Удалятся только лаунчер и его логи.";
+                return;
+            }
+            if (_demo) { SetUninstallStage(0); UninstallStatus = "Режим показа: ничего не удалено."; return; }
+            SetUninstallStage(2);
+            try
+            {
+                if (remover != null)
+                {
+                    UninstallStatus = "Убираю перевод из игры…";
+                    await remover.RemoveAllAsync();
+                }
+                if (SelfRemove.Schedule(_exePath))
+                {
+                    UninstallStatus = "Перевод удалён. Лаунчер закроется и удалит себя.";
+                    await Task.Delay(1500);
+                    RequestClose?.Invoke();
+                    return;
+                }
+                UninstallStatus = "Перевод удалён. Удалите файл лаунчера сами: " + _exePath;
+            }
+            catch (Exception ex)
+            {
+                UninstallStatus = "Не удалось: " + Short(ex);
+            }
+            SetUninstallStage(0);
+            Refresh(keepToggles: false);
+        }
+
+        private void SetUninstallStage(int stage)
+        {
+            _uninstallStage = stage;
+            Raise(nameof(UninstallLabel)); Raise(nameof(UninstallEnabled));
         }
 
         private static string Short(Exception ex)
