@@ -20,6 +20,25 @@
 
 Требования: Windows 10 или 11. Больше ничего ставить не надо.
 
+## Linux и Steam Deck
+
+Для Linux и Steam Deck есть отдельный установщик —
+[PWRuScript](https://github.com/SlavaShucaev/PWRuScript) от **Slava Pacifist** (лицензия MIT). Он ставит
+тот же перевод из релизов этого репозитория, сверяет файлы по `PW_RU_mods.sha256` и сам вписывает
+в Steam параметр запуска для Proton `WINEDLLOVERRIDES="dwmapi=n,b" %command%`: без него под Proton
+не загружается UE4SS и язык сбрасывается на английский.
+
+На Steam Deck — в режиме рабочего стола, в Konsole:
+
+```bash
+curl -L -o pwru_script https://github.com/SlavaShucaev/PWRuScript/releases/latest/download/pwru_script
+chmod +x pwru_script
+./pwru_script
+```
+
+Удалить перевод: `./pwru_script --uninstall`. Подробности и вопросы — в репозитории
+[PWRuScript](https://github.com/SlavaShucaev/PWRuScript).
+
 ## Почему это безопасно
 
 - **Исходный код открыт.** Это он и есть, весь, в этом репозитории.
