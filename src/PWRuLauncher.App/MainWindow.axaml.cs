@@ -40,6 +40,10 @@ namespace PWRuLauncher
             // --shot <png>: окно рендерит себя в файл и закрывается (проверка вида без захвата экрана)
             if (shot != null)
             {
+                // за краем экрана и без фокуса: снимок не мешает тому, кто работает за компьютером
+                ShowActivated = false;
+                WindowStartupLocation = WindowStartupLocation.Manual;
+                Position = new Avalonia.PixelPoint(-20000, -20000);
                 Opened += async (_, _) =>
                 {
                     await System.Threading.Tasks.Task.Delay(releasesUrl != null ? 2000 : 600);

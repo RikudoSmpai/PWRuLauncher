@@ -466,9 +466,12 @@
         </StackPanel>
       </Grid>
 
-      <!-- «О программе»: поверх тела; шапка и подвал остаются -->
-      <Border Grid.Row="1" IsVisible="{Binding AboutOpen}" Background="#f40b1521" Padding="32,10">
-        <Grid RowDefinitions="Auto,*,Auto,Auto" Width="440">
+      <!-- «О программе»: поверх тела; шапка и подвал остаются.
+           Всё должно влезть и при раскрытом пути к игре (тело ~190 px): 22.11 четвёртый ряд с «Удалить всё»
+           вылез за низ, кнопки легли на статус и подвал и не нажимались. Поэтому окно шире, кнопки — одним рядом,
+           статусы — строками над ними. -->
+      <Border Grid.Row="1" IsVisible="{Binding AboutOpen}" Background="#f40b1521" Padding="32,8">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" Width="600">
           <Grid ColumnDefinitions="*,Auto">
             <StackPanel Spacing="3" VerticalAlignment="Center">
               <TextBlock Text="PROJECT WINGMAN — РУССКАЯ ЛОКАЛИЗАЦИЯ" FontSize="11" FontWeight="SemiBold" LetterSpacing="1" Foreground="#d1dfe7"/>
@@ -479,24 +482,22 @@
             </StackPanel>
             <Button Grid.Column="1" Classes="win close" Content="✕" Click="AboutClose_Click" VerticalAlignment="Top" ToolTip.Tip="Закрыть"/>
           </Grid>
-          <StackPanel Grid.Row="1" Spacing="10" Margin="0,10,0,0">
-            <TextBlock TextWrapping="Wrap" FontSize="10" LineHeight="14" Foreground="#8fa6b6"
-                       Text="Неофициальная русская локализация Project Wingman: озвучка, субтитры, интерфейс. Все файлы внутри лаунчера, он ничего не скачивает и не собирает. Исходный код открыт. Project Wingman и его арт принадлежат Sector D2."/>
-            <StackPanel Orientation="Horizontal" Spacing="10">
-              <Button Classes="browse" Width="150" Content="Исходный код" Click="Repo_Click" ToolTip.Tip="{Binding RepoUrl}"/>
-              <Button Classes="browse" Width="150" Content="Релизы" Click="Releases_Click" ToolTip.Tip="{Binding ReleasesUrl}"/>
-            </StackPanel>
+          <TextBlock Grid.Row="1" Margin="0,8,0,0" TextWrapping="Wrap" FontSize="10" LineHeight="14" Foreground="#8fa6b6"
+                     Text="Неофициальная русская локализация Project Wingman: озвучка, субтитры, интерфейс. Все файлы внутри лаунчера, он ничего не скачивает и не собирает. Исходный код открыт. Project Wingman и его арт принадлежат Sector D2."/>
+          <!-- статусы обновления и удаления: свободное место уходит над ними, к кнопкам они прижаты -->
+          <StackPanel Grid.Row="2" Spacing="3" Margin="0,8,0,0" VerticalAlignment="Bottom">
+            <TextBlock Text="{Binding UpdateStatus}" FontSize="10" Foreground="#9aafbc" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding UninstallStatus}" FontSize="10" Foreground="#b08f85" TextWrapping="Wrap"
+                       IsVisible="{Binding UninstallStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
           </StackPanel>
-          <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
-            <TextBlock Text="{Binding UpdateStatus}" FontSize="10" Foreground="#9aafbc" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,10,0"/>
-            <Button Grid.Column="1" Classes="browse" Width="176" Content="{Binding UpdateActionLabel}" IsEnabled="{Binding UpdateActionEnabled}" Click="UpdateAction_Click"/>
-          </Grid>
-          <!-- «Удалить всё»: перевод из игры, логи и сам лаунчер; второй клик — подтверждение -->
-          <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
-            <TextBlock Text="{Binding UninstallStatus}" FontSize="10" Foreground="#b08f85" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,10,0"/>
-            <Button Grid.Column="1" Classes="browse" Width="176" Content="{Binding UninstallLabel}" IsEnabled="{Binding UninstallEnabled}" Click="Uninstall_Click"
+          <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+            <Button Classes="browse" Width="126" Content="Исходный код" Click="Repo_Click" ToolTip.Tip="{Binding RepoUrl}"/>
+            <Button Classes="browse" Width="96" Content="Релизы" Click="Releases_Click" ToolTip.Tip="{Binding ReleasesUrl}"/>
+            <Button Classes="browse" Width="176" Content="{Binding UpdateActionLabel}" IsEnabled="{Binding UpdateActionEnabled}" Click="UpdateAction_Click"/>
+            <!-- «Удалить всё»: перевод из игры, логи и сам лаунчер; второй клик — подтверждение -->
+            <Button Classes="browse" Width="176" Content="{Binding UninstallLabel}" IsEnabled="{Binding UninstallEnabled}" Click="Uninstall_Click"
                     ToolTip.Tip="Убрать перевод из игры и удалить лаунчер"/>
-          </Grid>
+          </StackPanel>
         </Grid>
       </Border>
 
