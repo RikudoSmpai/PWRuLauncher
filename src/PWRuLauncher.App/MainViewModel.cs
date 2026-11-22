@@ -365,6 +365,9 @@ namespace PWRuLauncher
         /// <summary>Режим показа: --demo install|installing|ready|error. Диск не трогается.</summary>
         public void ApplyDemo(string demo)
         {
+            // «…-path»: то же состояние с раскрытым путём к игре — тело окна ниже всего (так «О программе» и сломался, 22.11)
+            bool pathOpen = demo.EndsWith("-path", StringComparison.Ordinal);
+            if (pathOpen) demo = demo.Substring(0, demo.Length - "-path".Length);
             _suppressToggles = true;
             _installer = null;
             _demo = true;           // показ: «Удалить всё» ничего не трогает
@@ -390,6 +393,10 @@ namespace PWRuLauncher
                     Phase = Phase.Ready; _voiceOn = true; _textOn = true; AboutOpen = true;
                     UpdateStatus = "Доступна версия 1.1.0 (у вас " + Updates.CurrentVersion + ")."; UpdateActionLabel = "Скачать и установить"; UpdateDot = true;
                     break;
+                case "about-latest":
+                    Phase = Phase.Ready; _voiceOn = true; _textOn = true; AboutOpen = true;
+                    UpdateStatus = "У вас последняя версия (" + Updates.CurrentVersion + ").";
+                    break;
                 case "update":
                     Phase = Phase.Update; _voiceOn = true; _textOn = true; ComponentsOpen = true;
                     break;
@@ -404,6 +411,7 @@ namespace PWRuLauncher
                     break;
             }
             if (Phase != Phase.Error && string.IsNullOrEmpty(GamePath)) { GamePath = @"D:\Games\Project Wingman"; PathValid = true; }
+            if (pathOpen) PathOpen = true;
             Raise(nameof(VoiceOn)); Raise(nameof(TextOn));
             RaiseSelectionFlags();
             UpdateComponentTexts();
